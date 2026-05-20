@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}Departments{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Departments</h1>
+  <a href="{{ url_for('admin.users') }}" class="btn btn-secondary btn-sm">← Back to employees</a>
+</div>
+
+<div class="card" style="margin-bottom:1.5rem">
+  <div class="card-header"><h2>Add department</h2></div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('admin.departments_create') }}">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Department name</label>
+          <input type="text" name="name" placeholder="e.g. Engineering" required>
+        </div>
+        <div class="form-group" style="justify-content:flex-end">
+          <label>&nbsp;</label>
+          <button type="submit" class="btn btn-primary">Add</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h2>All departments</h2></div>
+  <div class="table-wrap">
+    {% if departments %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for dept in departments %}
+        <tr>
+          <td>{{ dept.name }}</td>
+          <td>
+            <div class="toolbar">
+              <button class="btn btn-secondary btn-sm"
+                      onclick="openDeptEdit('{{ dept.id }}', '{{ dept.name }}')">
+                Edit
+              </button>
+              <form method="POST"
+                    action="{{ url_for('admin.departments_delete', dept_id=dept.id) }}"
+                    class="delete-form">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="padding:2rem;text-align:center;color:var(--text-muted)">
+      No departments yet.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block modals %}
+<div class="modal-overlay" id="dept-edit-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Edit department</h2>
+      <button class="modal-close" onclick="closeDeptEdit()">✕</button>
+    </div>
+    <form method="POST" id="dept-edit-form" action="">
+      <div class="form-group" style="margin-bottom:1.25rem">
+        <label>Department name</label>
+        <input type="text" name="name" id="dept-edit-name" required>
+      </div>
+      <div class="toolbar" style="justify-content:flex-end">
+        <button type="button" class="btn btn-secondary"
+                onclick="closeDeptEdit()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openDeptEdit(id, name) {
+  document.getElementById('dept-edit-form').action = '/admin/departments/edit/' + id;
+  document.getElementById('dept-edit-name').value  = name;
+  document.getElementById('dept-edit-modal').classList.add('open');
+}
+function closeDeptEdit() {
+  document.getElementById('dept-edit-modal').classList.remove('open');
+}
+document.getElementById('dept-edit-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeDeptEdit();
+});
+</script>
+{% endblock %}

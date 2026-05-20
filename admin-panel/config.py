@@ -5,5 +5,6 @@ class Config:
     CHAT_ID    = 'your-chat-id'
     DEBUG      = True
 
-    USERS_JSON   = f'{DB_PATH}/users.json'
-    RECORDS_JSON = f'{DB_PATH}/records.json'
+    USERS_JSON       = f'{DB_PATH}/users.json'
+    RECORDS_JSON     = f'{DB_PATH}/records.json'
+    DEPARTMENTS_JSON = f'{DB_PATH}/departments.json'

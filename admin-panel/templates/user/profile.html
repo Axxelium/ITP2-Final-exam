@@ -7,45 +7,97 @@
 </div>
 
 <div class="grid-2">
+
+  <!-- LEFT: profile info + change password -->
+  <div style="display:flex;flex-direction:column;gap:1.25rem">
+
+    <div class="card">
+      <div class="card-header"><h2>Account information</h2></div>
+      <div class="card-body">
+        <table class="data-table">
+          <tbody>
+            <tr>
+              <td><strong>Username</strong></td>
+              <td>{{ user.username }}</td>
+            </tr>
+            <tr>
+              <td><strong>Role</strong></td>
+              <td><span class="badge {{ user.role }}">{{ user.role }}</span></td>
+            </tr>
+            <tr>
+              <td><strong>Department</strong></td>
+              <td>{{ user.department if user.department else '—' }}</td>
+            </tr>
+            <tr>
+              <td><strong>Salary</strong></td>
+              <td>{{ user.salary if user.salary else '—' }}</td>
+            </tr>
+            <tr>
+              <td><strong>Joined</strong></td>
+              <td>{{ user.created_at[:10] }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h2>Change password</h2></div>
+      <div class="card-body">
+        <form method="POST">
+          <div class="form-group" style="margin-bottom:1rem">
+            <label>New password</label>
+            <input type="password" name="password"
+                   placeholder="At least 6 characters" required>
+            <span class="hint">Minimum 6 characters</span>
+          </div>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: colleagues -->
   <div class="card">
-    <div class="card-header"><h2>Account information</h2></div>
-    <div class="card-body">
+    <div class="card-header">
+      <h2>My colleagues</h2>
+      <span class="badge">{{ colleagues|length }}</span>
+    </div>
+    <div class="table-wrap">
+      {% if colleagues %}
       <table class="data-table">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Department</th>
+            <th>Role</th>
+            <th>Joined</th>
+          </tr>
+        </thead>
         <tbody>
+          {% for c in colleagues %}
           <tr>
-            <td><strong>Username</strong></td>
-            <td>{{ user.username }}</td>
+            <td>
+              <div class="cell-user">
+                <div class="avatar">{{ c.username[0].upper() }}</div>
+                <span class="meta-name">{{ c.username }}</span>
+              </div>
+            </td>
+            <td>{{ c.department if c.department else '—' }}</td>
+            <td><span class="badge {{ c.role }}">{{ c.role }}</span></td>
+            <td>{{ c.created_at[:10] }}</td>
           </tr>
-          <tr>
-            <td><strong>Role</strong></td>
-            <td><span class="badge {{ user.role }}">{{ user.role }}</span></td>
-          </tr>
-          <tr>
-            <td><strong>Joined</strong></td>
-            <td>{{ user.created_at[:10] }}</td>
-          </tr>
-          <tr>
-            <td><strong>Records</strong></td>
-            <td>{{ records_count }}</td>
-          </tr>
+          {% endfor %}
         </tbody>
       </table>
+      {% else %}
+      <div style="padding:2rem;text-align:center;color:var(--text-muted)">
+        No colleagues yet.
+      </div>
+      {% endif %}
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-header"><h2>Change password</h2></div>
-    <div class="card-body">
-      <form method="POST">
-        <div class="form-group" style="margin-bottom:1rem">
-          <label>New password</label>
-          <input type="password" name="password"
-                 placeholder="At least 6 characters" required>
-          <span class="hint">Minimum 6 characters</span>
-        </div>
-        <button type="submit" class="btn btn-primary">Save</button>
-      </form>
-    </div>
-  </div>
 </div>
-{% endblock %}s
+{% endblock %}
