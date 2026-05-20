@@ -103,6 +103,34 @@ def users_delete(user_id):
 
     return redirect(url_for('admin.users'))
 
+@admin_bp.route('/users/edit/<user_id>', methods=['POST'])
+@login_required(role='admin')
+def users_edit(user_id):
+    user = db.get_user_by_id(user_id)
+    if not user:
+        flash('User not found', 'error')
+        return redirect(url_for('admin.users'))
+
+    new_username = request.form.get('username', '').strip()
+    new_role     = request.form.get('role', 'user')
+
+    if len(new_username) < 3:
+        flash('Username must be at least 3 characters', 'error')
+        return redirect(url_for('admin.users'))
+
+    existing = db.get_user_by_username(new_username)
+    if existing and existing.id != user_id:
+        flash('Username already taken', 'error')
+        return redirect(url_for('admin.users'))
+
+    user.username = new_username
+    user.role     = new_role
+    db.update_user(user)
+
+    bot.notify_admin_action('edit_user', f'user_id={user_id} new_username={new_username}')
+    flash(f'User {new_username} updated successfully', 'success')
+    return redirect(url_for('admin.users'))
+
 
 @admin_bp.route('/data')
 @login_required(role='admin')

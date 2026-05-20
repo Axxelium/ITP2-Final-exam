@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
-{% block title %}Дашборд администратора{% endblock %}
+{% block title %}Admin Dashboard{% endblock %}
 
 {% block content %}
 <div class="page-header">
   <div>
-    <h1>Панель администратора</h1>
-    <p class="subtitle">Общая статистика системы</p>
+    <h1>Owner Dashboard</h1>
+    <p class="subtitle">Company overview</p>
   </div>
 </div>
 
@@ -13,14 +13,14 @@
   <div class="stat-card">
     <div class="stat-icon">👥</div>
     <div>
-      <p class="stat-label">Пользователей</p>
+      <p class="stat-label">Total Employees</p>
       <div class="stat-value">{{ total_users }}</div>
     </div>
   </div>
   <div class="stat-card">
     <div class="stat-icon green">📋</div>
     <div>
-      <p class="stat-label">Записей сотрудников</p>
+      <p class="stat-label">Total Records</p>
       <div class="stat-value">{{ total_records }}</div>
     </div>
   </div>
@@ -28,16 +28,16 @@
 
 <div class="card">
   <div class="card-header">
-    <h2>Последние 5 пользователей</h2>
-    <a href="{{ url_for('admin.users') }}" class="btn btn-secondary btn-sm">Все пользователи</a>
+    <h2>Recently added employees</h2>
+    <a href="{{ url_for('admin.users') }}" class="btn btn-secondary btn-sm">View all</a>
   </div>
   <div class="table-wrap">
     <table class="data-table">
       <thead>
         <tr>
-          <th>Пользователь</th>
-          <th>Роль</th>
-          <th>Дата регистрации</th>
+          <th>Employee</th>
+          <th>Role</th>
+          <th>Joined</th>
         </tr>
       </thead>
       <tbody>

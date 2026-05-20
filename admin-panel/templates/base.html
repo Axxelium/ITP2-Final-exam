@@ -1,10 +1,48 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Admin Panel{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,0.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--surface-color);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 440px;
+      position: relative;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+    .modal-header h2 { margin: 0; }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      line-height: 1;
+    }
+    .modal-close:hover { color: var(--text-color); }
+  </style>
 </head>
 <body>
 
@@ -21,12 +59,12 @@
 
     <ul class="navbar-links" id="navbar-links">
       {% if session.get('role') == 'admin' %}
-        <li><a href="{{ url_for('admin.dashboard') }}">Дашборд</a></li>
-        <li><a href="{{ url_for('admin.users') }}">Пользователи</a></li>
-        <li><a href="{{ url_for('admin.data') }}">Все записи</a></li>
+        <li><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+        <li><a href="{{ url_for('admin.users') }}">Employees</a></li>
+        <li><a href="{{ url_for('admin.data') }}">All Records</a></li>
       {% else %}
-        <li><a href="{{ url_for('user.dashboard') }}">Мои сотрудники</a></li>
-        <li><a href="{{ url_for('user.profile') }}">Профиль</a></li>
+        <li><a href="{{ url_for('user.dashboard') }}">My Records</a></li>
+        <li><a href="{{ url_for('user.profile') }}">Profile</a></li>
       {% endif %}
     </ul>
 
@@ -38,7 +76,7 @@
           <span class="role">{{ session.get('role') }}</span>
         </div>
       </div>
-      <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary btn-sm">Выйти</a>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary btn-sm">Sign out</a>
     </div>
 
   </div>
@@ -46,7 +84,6 @@
 {% endif %}
 
 <div class="container">
-
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       {% for category, message in messages %}
@@ -59,8 +96,9 @@
   {% endwith %}
 
   {% block content %}{% endblock %}
-
 </div>
+
+{% block modals %}{% endblock %}
 
 <script src="{{ url_for('static', filename='main.js') }}"></script>
 </body>

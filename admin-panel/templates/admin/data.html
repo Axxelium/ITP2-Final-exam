@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
-{% block title %}Все записи{% endblock %}
+{% block title %}All Records{% endblock %}
 
 {% block content %}
 <div class="page-header">
   <div>
-    <h1>Все записи сотрудников</h1>
-    <p class="subtitle">Всего: {{ total }}</p>
+    <h1>All employee records</h1>
+    <p class="subtitle">Total: {{ total }}</p>
   </div>
 </div>
 
@@ -14,12 +14,12 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th>Имя</th>
-          <th>Отдел</th>
-          <th>Зарплата</th>
-          <th>Работает с</th>
-          <th>Владелец</th>
-          <th>Добавлено</th>
+          <th>Name</th>
+          <th>Department</th>
+          <th>Salary</th>
+          <th>Working since</th>
+          <th>Added by</th>
+          <th>Date added</th>
         </tr>
       </thead>
       <tbody>
@@ -39,7 +39,7 @@
 
   {% if pages > 1 %}
   <div class="pagination">
-    <span class="info">Страница {{ page }} из {{ pages }}</span>
+    <span class="info">Page {{ page }} of {{ pages }}</span>
     <div class="pages">
       {% if page > 1 %}
         <a href="{{ url_for('admin.data', page=page-1) }}">←</a>

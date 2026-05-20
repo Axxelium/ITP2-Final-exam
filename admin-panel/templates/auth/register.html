@@ -1,17 +1,16 @@
 {% extends 'base.html' %}
-{% block title %}Регистрация{% endblock %}
+{% block title %}Register{% endblock %}
 
 {% block content %}
 <div class="auth-shell">
   <div class="auth-card">
-
     <div class="brand">
       <div class="logo" style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,#4f46e5,#7c3aed);display:grid;place-items:center;color:#fff;font-weight:700">E</div>
       Employee Management
     </div>
 
-    <h1>Регистрация</h1>
-    <p class="subtitle">Создайте новый аккаунт</p>
+    <h1>Create account</h1>
+    <p class="subtitle">Fill in the details to register</p>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for category, message in messages %}
@@ -21,20 +20,19 @@
 
     <form method="POST" id="register-form">
       <div class="form-group" style="margin-bottom:.75rem">
-        <label>Логин</label>
-        <input type="text" name="username" id="username" placeholder="Минимум 3 символа" required>
+        <label>Username</label>
+        <input type="text" name="username" id="username" placeholder="At least 3 characters" required>
       </div>
       <div class="form-group" style="margin-bottom:1.25rem">
-        <label>Пароль</label>
-        <input type="password" name="password" id="password" placeholder="Минимум 6 символов" required>
+        <label>Password</label>
+        <input type="password" name="password" id="password" placeholder="At least 6 characters" required>
       </div>
-      <button type="submit" class="btn btn-primary btn-block">Зарегистрироваться</button>
+      <button type="submit" class="btn btn-primary btn-block">Register</button>
     </form>
 
     <div class="auth-footer">
-      Уже есть аккаунт? <a href="{{ url_for('auth.login') }}">Войти</a>
+      Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a>
     </div>
-
   </div>
 </div>
 {% endblock %}
