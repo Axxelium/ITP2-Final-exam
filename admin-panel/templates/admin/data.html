@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Все записи{% endblock %}
+
+{% block content %}
+<h1>Все записи сотрудников</h1>
+<p>Всего: {{ total }}</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Имя</th>
+            <th>Отдел</th>
+            <th>Зарплата</th>
+            <th>Работает с</th>
+            <th>Владелец</th>
+            <th>Дата добавления</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in records %}
+        <tr>
+            <td>{{ r.name }}</td>
+            <td>{{ r.department }}</td>
+            <td>{{ r.salary }}</td>
+            <td>{{ r.worked_since }}</td>
+            <td>{{ users_map.get(r.user_id, '—') }}</td>
+            <td>{{ r.created_at[:10] }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="{{ url_for('admin.data', page=page-1) }}">← Назад</a>
+    {% endif %}
+
+    {% for p in range(1, pages+1) %}
+    <a href="{{ url_for('admin.data', page=p) }}"
+       class="{{ 'active' if p == page }}">{{ p }}</a>
+    {% endfor %}
+
+    {% if page < pages %}
+    <a href="{{ url_for('admin.data', page=page+1) }}">Вперёд →</a>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Дашборд администратора{% endblock %}
+
+{% block content %}
+<h1>Панель администратора</h1>
+
+<div class="stats-grid">
+    <div class="card">
+        <div class="card-value">{{ total_users }}</div>
+        <div class="card-label">Пользователей</div>
+    </div>
+    <div class="card">
+        <div class="card-value">{{ total_records }}</div>
+        <div class="card-label">Записей сотрудников</div>
+    </div>
+</div>
+
+<h2>Последние 5 пользователей</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Логин</th>
+            <th>Роль</th>
+            <th>Дата регистрации</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in recent_users %}
+        <tr>
+            <td>{{ user.username }}</td>
+            <td>{{ user.role }}</td>
+            <td>{{ user.created_at[:10] }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<a href="{{ url_for('admin.users') }}">Управление пользователями</a> |
+<a href="{{ url_for('admin.data') }}">Все записи</a>
+{% endblock %}
