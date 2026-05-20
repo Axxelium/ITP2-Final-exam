@@ -61,11 +61,11 @@ def users_create():
     role     = request.form.get('role', 'user')
 
     if len(username) < 3 or len(password) < 6:
-        flash('Логин — мин. 3 символа, пароль — мин. 6 символов', 'error')
+        flash('Login minimally - 3 characters, password minimally - 6 characters', 'error')
         return redirect(url_for('admin.users'))
 
     if db.get_user_by_username(username):
-        flash('Пользователь с таким именем уже существует', 'error')
+        flash('Employees with that name is exist', 'error')
         return redirect(url_for('admin.users'))
 
     if role not in ('admin', 'user'):
