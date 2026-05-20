@@ -81,7 +81,7 @@ def users_create():
     db.save_user(user)
     bot.notify_new_user(username)
 
-    flash(f'Пользователь {username} создан', 'success')
+    flash(f'Employees {username} created', 'success')
     return redirect(url_for('admin.users'))
 
 
@@ -89,7 +89,7 @@ def users_create():
 @login_required(role='admin')
 def users_delete(user_id):
     if user_id == session.get('user_id'):
-        flash('Нельзя удалить самого себя', 'error')
+        flash('You cant delete yourself', 'error')
         return redirect(url_for('admin.users'))
 
     db.delete_records_by_user(user_id)
@@ -97,9 +97,9 @@ def users_delete(user_id):
 
     if deleted:
         bot.notify_admin_action('delete_user', f'user_id={user_id}')
-        flash('Пользователь и его записи удалены', 'success')
+        flash('Employee and his records deleted', 'success')
     else:
-        flash('Пользователь не найден', 'error')
+        flash('Employee not found', 'error')
 
     return redirect(url_for('admin.users'))
 
