@@ -7,8 +7,7 @@ from decorators           import login_required
 
 user_bp = Blueprint('user', __name__, url_prefix='/user')
 
-db = DatabaseService(Config.USERS_JSON, Config.RECORDS_JSON,
-                     Config.DEPARTMENTS_JSON)
+db = DatabaseService(Config.USERS_JSON, Config.DEPARTMENTS_JSON)
 
 
 @user_bp.route('/dashboard')
@@ -34,9 +33,10 @@ def profile():
         flash('Password updated successfully', 'success')
         return redirect(url_for('user.profile'))
 
-    # все коллеги кроме самого себя, без зарплаты
-    colleagues = [u for u in db.get_all_users() if u.id != user.id]
+    colleagues  = [u for u in db.get_all_users() if u.id != user.id]
+    departments = db.get_all_departments()
 
     return render_template('user/profile.html',
-                           user       = user,
-                           colleagues = colleagues)
+                           user        = user,
+                           colleagues  = colleagues,
+                           departments = departments)

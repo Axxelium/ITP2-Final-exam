@@ -1,19 +1,17 @@
 import json
 import os
-from models.user   import User
-from models.record import Record
+from models.user import User
 
 
 class DatabaseService:
-    def __init__(self, users_path: str, records_path: str,
+    def __init__(self, users_path: str,
                  departments_path: str = 'data/departments.json'):
-        self.users_path        = users_path
-        self.records_path      = records_path
-        self.departments_path  = departments_path
+        self.users_path       = users_path
+        self.departments_path = departments_path
         self._ensure_files()
 
     def _ensure_files(self):
-        for path in [self.users_path, self.records_path, self.departments_path]:
+        for path in [self.users_path, self.departments_path]:
             os.makedirs(os.path.dirname(path), exist_ok=True)
             if not os.path.exists(path):
                 with open(path, 'w') as f:
@@ -65,47 +63,6 @@ class DatabaseService:
             return True
         return False
 
-    # ══ RECORDS ══════════════════════════════════════════════════
-
-    def _load_records(self) -> list:
-        with open(self.records_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-
-    def _save_records(self, data: list):
-        with open(self.records_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-
-    def get_all_records(self) -> list[Record]:
-        return [Record.from_dict(r) for r in self._load_records()]
-
-    def get_records_by_user(self, user_id: str) -> list[Record]:
-        return [Record.from_dict(r)
-                for r in self._load_records()
-                if r['user_id'] == user_id]
-
-    def get_record_by_id(self, record_id: str) -> Record | None:
-        for r in self._load_records():
-            if r['id'] == record_id:
-                return Record.from_dict(r)
-        return None
-
-    def save_record(self, record: Record):
-        data = self._load_records()
-        data.append(record.to_dict())
-        self._save_records(data)
-
-    def update_record(self, record: Record):
-        data = self._load_records()
-        for i, r in enumerate(data):
-            if r['id'] == record.id:
-                data[i] = record.to_dict()
-                break
-        self._save_records(data)
-
-    def delete_records_by_user(self, user_id: str):
-        data = self._load_records()
-        self._save_records([r for r in data if r['user_id'] != user_id])
-
     # ══ DEPARTMENTS ═══════════════════════════════════════════════
 
     def _load_departments(self) -> list:
@@ -118,12 +75,6 @@ class DatabaseService:
 
     def get_all_departments(self) -> list[dict]:
         return self._load_departments()
-
-    def get_department_by_id(self, dept_id: str) -> dict | None:
-        for d in self._load_departments():
-            if d['id'] == dept_id:
-                return d
-        return None
 
     def save_department(self, dept: dict):
         data = self._load_departments()

@@ -58,16 +58,14 @@
     <button class="menu-toggle" id="menu-toggle">☰</button>
 
     <ul class="navbar-links" id="navbar-links">
-      {% if session.get('role') == 'admin' %}
-        <li><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
-        <li><a href="{{ url_for('admin.users') }}">Employees</a></li>
-        <li><a href="{{ url_for('admin.data') }}">All Records</a></li>
-        <li><a href="{{ url_for('admin.departments') }}">Departments</a></li>
-      {% else %}
-        <li><a href="{{ url_for('user.dashboard') }}">My Records</a></li>
-        <li><a href="{{ url_for('user.profile') }}">Profile</a></li>
-      {% endif %}
-    </ul>
+  {% if session.get('role') == 'admin' %}
+    <li><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+    <li><a href="{{ url_for('admin.users') }}">Employees</a></li>
+    <li><a href="{{ url_for('admin.departments') }}">Departments</a></li>
+  {% else %}
+    <li><a href="{{ url_for('user.profile') }}">Profile</a></li>
+  {% endif %}
+</ul>
 
     <div class="navbar-user">
       <div class="user-chip">

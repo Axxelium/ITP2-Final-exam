@@ -8,7 +8,7 @@
 
 <div class="grid-2">
 
-  <!-- LEFT: profile info + change password -->
+  <!-- LEFT -->
   <div style="display:flex;flex-direction:column;gap:1.25rem">
 
     <div class="card">
@@ -16,26 +16,14 @@
       <div class="card-body">
         <table class="data-table">
           <tbody>
-            <tr>
-              <td><strong>Username</strong></td>
-              <td>{{ user.username }}</td>
-            </tr>
-            <tr>
-              <td><strong>Role</strong></td>
-              <td><span class="badge {{ user.role }}">{{ user.role }}</span></td>
-            </tr>
-            <tr>
-              <td><strong>Department</strong></td>
-              <td>{{ user.department if user.department else '—' }}</td>
-            </tr>
-            <tr>
-              <td><strong>Salary</strong></td>
-              <td>{{ user.salary if user.salary else '—' }}</td>
-            </tr>
-            <tr>
-              <td><strong>Joined</strong></td>
-              <td>{{ user.created_at[:10] }}</td>
-            </tr>
+            <tr><td><strong>Username</strong></td><td>{{ user.username }}</td></tr>
+            <tr><td><strong>Role</strong></td>
+                <td><span class="badge {{ user.role }}">{{ user.role }}</span></td></tr>
+            <tr><td><strong>Department</strong></td>
+                <td>{{ user.department if user.department else '—' }}</td></tr>
+            <tr><td><strong>Salary</strong></td>
+                <td>{{ user.salary if user.salary else '—' }}</td></tr>
+            <tr><td><strong>Joined</strong></td><td>{{ user.created_at[:10] }}</td></tr>
           </tbody>
         </table>
       </div>
@@ -58,11 +46,17 @@
 
   </div>
 
-  <!-- RIGHT: colleagues -->
-  <div class="card">
+  <!-- RIGHT: colleagues with department filter -->
+  <div class="card" style="align-self:start">
     <div class="card-header">
       <h2>My colleagues</h2>
-      <span class="badge">{{ colleagues|length }}</span>
+      <select id="dept-filter" class="btn btn-secondary btn-sm"
+              style="font-weight:400;padding:.35rem .65rem">
+        <option value="">All departments</option>
+        {% for dept in departments %}
+        <option value="{{ dept.name }}">{{ dept.name }}</option>
+        {% endfor %}
+      </select>
     </div>
     <div class="table-wrap">
       {% if colleagues %}
@@ -75,9 +69,9 @@
             <th>Joined</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="colleagues-tbody">
           {% for c in colleagues %}
-          <tr>
+          <tr data-dept="{{ c.department }}">
             <td>
               <div class="cell-user">
                 <div class="avatar">{{ c.username[0].upper() }}</div>
@@ -100,4 +94,30 @@
   </div>
 
 </div>
+
+<script>
+document.getElementById('dept-filter').addEventListener('change', function () {
+  const selected = this.value;
+  const rows = document.querySelectorAll('#colleagues-tbody tr');
+  let visible = 0;
+  rows.forEach(function (row) {
+    const dept = row.dataset.dept || '';
+    const show = !selected || dept === selected;
+    row.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+  // показываем "nothing found" если нет совпадений
+  let empty = document.getElementById('no-colleagues');
+  if (visible === 0) {
+    if (!empty) {
+      empty = document.createElement('tr');
+      empty.id = 'no-colleagues';
+      empty.innerHTML = '<td colspan="4" style="padding:1.5rem;text-align:center;color:var(--text-muted)">No employees in this department</td>';
+      document.getElementById('colleagues-tbody').appendChild(empty);
+    }
+  } else if (empty) {
+    empty.remove();
+  }
+});
+</script>
 {% endblock %}

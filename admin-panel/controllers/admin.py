@@ -6,33 +6,27 @@ from flask import (Blueprint, render_template, request,
 
 from config               import Config
 from models.user          import User
-from models.record        import Record
 from services.db_service  import DatabaseService
 from services.bot_service import BotService
 from decorators           import login_required
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
-db  = DatabaseService(Config.USERS_JSON, Config.RECORDS_JSON,
-                      Config.DEPARTMENTS_JSON)
+db  = DatabaseService(Config.USERS_JSON, Config.DEPARTMENTS_JSON)
 bot = BotService()
-
-PER_PAGE = 10
 
 
 @admin_bp.route('/dashboard')
 @login_required(role='admin')
 def dashboard():
-    users   = db.get_all_users()
-    records = db.get_all_records()
+    users        = db.get_all_users()
     recent_users = sorted(users, key=lambda u: u.created_at, reverse=True)[:5]
     return render_template('admin/dashboard.html',
-                           total_users   = len(users),
-                           total_records = len(records),
-                           recent_users  = recent_users)
+                           total_users  = len(users),
+                           recent_users = recent_users)
 
 
-# ── Users ─────────────────────────────────────────────────────
+# ── Users ──────────────────────────────────────────────────────
 
 @admin_bp.route('/users')
 @login_required(role='admin')
@@ -40,8 +34,8 @@ def users():
     all_users   = db.get_all_users()
     departments = db.get_all_departments()
     return render_template('admin/users.html',
-                           users=all_users,
-                           departments=departments)
+                           users       = all_users,
+                           departments = departments)
 
 
 @admin_bp.route('/users/search')
@@ -59,9 +53,11 @@ def users_search():
 @admin_bp.route('/users/create', methods=['POST'])
 @login_required(role='admin')
 def users_create():
-    username = request.form.get('username', '').strip()
-    password = request.form.get('password', '')
-    role     = request.form.get('role', 'user')
+    username   = request.form.get('username', '').strip()
+    password   = request.form.get('password', '')
+    role       = request.form.get('role', 'user')
+    department = request.form.get('department', '').strip()
+    salary_str = request.form.get('salary', '').strip()
 
     if len(username) < 3 or len(password) < 6:
         flash('Username min 3 chars, password min 6 chars', 'error')
@@ -74,12 +70,21 @@ def users_create():
     if role not in ('admin', 'user'):
         role = 'user'
 
+    salary = 0
+    if salary_str:
+        try:
+            salary = int(salary_str)
+        except ValueError:
+            salary = 0
+
     user = User(
         id            = str(uuid.uuid4()),
         username      = username,
         password_hash = User.hash_password(password),
         role          = role,
         created_at    = datetime.now().isoformat(),
+        salary        = salary,
+        department    = department,
     )
     db.save_user(user)
     bot.notify_new_user(username)
@@ -124,6 +129,8 @@ def users_edit(user_id):
         except ValueError:
             flash('Salary must be a number', 'error')
             return redirect(url_for('admin.users'))
+    else:
+        user.salary = 0
 
     db.update_user(user)
     bot.notify_admin_action('edit_user', f'user_id={user_id}')
@@ -138,9 +145,7 @@ def users_delete(user_id):
         flash("You can't delete yourself", 'error')
         return redirect(url_for('admin.users'))
 
-    db.delete_records_by_user(user_id)
     deleted = db.delete_user(user_id)
-
     if deleted:
         bot.notify_admin_action('delete_user', f'user_id={user_id}')
         flash('Employee deleted', 'success')
@@ -148,29 +153,6 @@ def users_delete(user_id):
         flash('Employee not found', 'error')
 
     return redirect(url_for('admin.users'))
-
-
-# ── Records (admin) ────────────────────────────────────────────
-
-@admin_bp.route('/data')
-@login_required(role='admin')
-def data():
-    all_records = db.get_all_records()
-    all_users   = {u.id: u.username for u in db.get_all_users()}
-
-    page    = request.args.get('page', 1, type=int)
-    total   = len(all_records)
-    pages   = max(1, (total + PER_PAGE - 1) // PER_PAGE)
-    page    = max(1, min(page, pages))
-    start   = (page - 1) * PER_PAGE
-    records = all_records[start:start + PER_PAGE]
-
-    return render_template('admin/data.html',
-                           records   = records,
-                           users_map = all_users,
-                           page      = page,
-                           pages     = pages,
-                           total     = total)
 
 
 # ── Departments ────────────────────────────────────────────────
@@ -189,9 +171,7 @@ def departments_create():
     if not name:
         flash('Department name is required', 'error')
         return redirect(url_for('admin.departments'))
-
-    dept = {'id': str(uuid.uuid4()), 'name': name}
-    db.save_department(dept)
+    db.save_department({'id': str(uuid.uuid4()), 'name': name})
     flash(f'Department "{name}" created', 'success')
     return redirect(url_for('admin.departments'))
 
@@ -203,7 +183,6 @@ def departments_edit(dept_id):
     if not name:
         flash('Department name is required', 'error')
         return redirect(url_for('admin.departments'))
-
     db.update_department(dept_id, name)
     flash('Department updated', 'success')
     return redirect(url_for('admin.departments'))
