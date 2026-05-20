@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Мои сотрудники{% endblock %}
+
+{% block content %}
+<h1>Мои сотрудники</h1>
+
+<h2>Добавить сотрудника</h2>
+<form method="POST" action="{{ url_for('user.records_add') }}">
+    <input type="text"   name="name"         placeholder="Имя"          required>
+    <input type="text"   name="department"   placeholder="Отдел"        required>
+    <input type="number" name="salary"       placeholder="Зарплата"     required>
+    <input type="number" name="worked_since" placeholder="Год начала"   required>
+    <button type="submit">Добавить</button>
+</form>
+
+<h2>Список ({{ records|length }})</h2>
+
+{% if records %}
+<table>
+    <thead>
+        <tr>
+            <th>Имя</th>
+            <th>Отдел</th>
+            <th>Зарплата</th>
+            <th>Работает с</th>
+            <th>Добавлено</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in records %}
+        <tr>
+            <td>{{ r.name }}</td>
+            <td>{{ r.department }}</td>
+            <td>{{ r.salary }}</td>
+            <td>{{ r.worked_since }}</td>
+            <td>{{ r.created_at[:10] }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>Записей пока нет.</p>
+{% endif %}
+{% endblock %}
