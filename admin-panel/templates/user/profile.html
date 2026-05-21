@@ -22,6 +22,19 @@
               <td>{{ user.salary if user.salary else '—' }}</td></tr>
           <tr><td><strong>Joined</strong></td><td>{{ user.created_at[:10] }}</td></tr>
           <tr><td><strong>Records</strong></td><td>{{ records_count }}</td></tr>
+          <tr>
+            <td><strong>Telegram</strong></td>
+            <td>
+              {% if user.telegram_id %}
+                <span class="badge active">✓ Linked</span>
+              {% else %}
+                <span class="badge inactive">Not linked</span>
+                <span class="hint" style="display:block;margin-top:.25rem">
+                  Send <code>/link {{ user.username }} your_password</code> to the bot
+                </span>
+              {% endif %}
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>

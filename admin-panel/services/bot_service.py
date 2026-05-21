@@ -1,6 +1,9 @@
 import logging
 import threading
-import requests
+
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
+
 from config import Config
 
 logger = logging.getLogger(__name__)
@@ -8,44 +11,49 @@ logger = logging.getLogger(__name__)
 
 class BotService:
 
-    def _api(self, method: str, **kwargs) -> dict | None:
-        """Вызов любого метода Telegram Bot API."""
-        try:
-            url  = f'https://api.telegram.org/bot{Config.BOT_TOKEN}/{method}'
-            resp = requests.post(url, json=kwargs, timeout=5)
-            if resp.ok:
-                return resp.json()
-            logger.error('Telegram API error [%s]: %s %s',
-                         method, resp.status_code, resp.text)
-        except requests.exceptions.ConnectionError:
-            logger.error('Telegram: no connection')
-        except requests.exceptions.Timeout:
-            logger.error('Telegram: request timed out')
-        except Exception as e:
-            logger.error('Telegram: unexpected error: %s', e)
-        return None
+    def __init__(self):
+        self._app = None
 
-    # ── Отправка одному ───────────────────────────────────────────
-
-    def _send(self, chat_id: int, text: str):
-        self._api('sendMessage', chat_id=chat_id,
-                  text=text, parse_mode='HTML')
+    def _build_app(self) -> Application:
+        return Application.builder().token(Config.BOT_TOKEN).build()
 
     # ── Рассылка всем подписчикам ─────────────────────────────────
 
-    def _broadcast(self, text: str):
+    def _get_db(self):
         from services.db_service import DatabaseService
-        db = DatabaseService(Config.USERS_JSON,
-                             Config.DEPARTMENTS_JSON,
-                             Config.SUBSCRIBERS_JSON)
+        return DatabaseService(
+            Config.USERS_JSON,
+            Config.DEPARTMENTS_JSON,
+            Config.RECORDS_JSON,
+        )
+
+    def _broadcast(self, text: str):
+        import asyncio
+        db          = self._get_db()
         subscribers = db.get_all_subscribers()
         if not subscribers:
-            logger.info('Telegram: no subscribers yet')
+            logger.info('Telegram: no subscribers')
             return
-        for chat_id in subscribers:
-            self._send(chat_id, text)
 
-    # ── Публичные методы ──────────────────────────────────────────
+        async def _send_all():
+            app = Application.builder().token(Config.BOT_TOKEN).build()
+            async with app:
+                for chat_id in subscribers:
+                    try:
+                        await app.bot.send_message(
+                            chat_id   = chat_id,
+                            text      = text,
+                            parse_mode = 'HTML',
+                        )
+                    except Exception as e:
+                        logger.error('Telegram send error to %s: %s', chat_id, e)
+
+        try:
+            asyncio.run(_send_all())
+        except Exception as e:
+            logger.error('Telegram broadcast error: %s', e)
+
+    # ── Публичные методы уведомлений ──────────────────────────────
 
     def notify_new_user(self, username: str):
         text = (
@@ -60,72 +68,152 @@ class BotService:
             'edit_user':   '✏️ Employee updated',
         }
         label = labels.get(action, f'⚙️ Action: {action}')
-        text  = f'<b>{label}</b>\n<code>{detail}</code>'
-        self._broadcast(text)
+        self._broadcast(f'<b>{label}</b>\n<code>{detail}</code>')
 
-    # ── Polling — обработка /start и /stop ────────────────────────
+    # ── Polling — обработчики команд ──────────────────────────────
 
     def start_polling(self):
-        """Запускает polling в отдельном фоновом потоке."""
-        thread = threading.Thread(target=self._poll_loop,
-                                  daemon=True, name='tg-polling')
+        thread = threading.Thread(
+            target  = self._run_polling,
+            daemon  = True,
+            name    = 'tg-polling',
+        )
         thread.start()
         logger.info('Telegram polling started')
 
-    def _poll_loop(self):
-        from services.db_service import DatabaseService
-        db = DatabaseService(Config.USERS_JSON,
-                             Config.DEPARTMENTS_JSON,
-                             Config.SUBSCRIBERS_JSON)
-        offset = None
+    def _run_polling(self):
+        import asyncio
+        asyncio.run(self._polling_main())
 
-        while True:
-            try:
-                params = {'timeout': 30, 'allowed_updates': ['message']}
-                if offset:
-                    params['offset'] = offset
+    async def _polling_main(self):
+        app = self._build_app()
 
-                result = self._api('getUpdates', **params)
-                if not result or not result.get('ok'):
-                    continue
+        app.add_handler(CommandHandler('start',  self._handle_start))
+        app.add_handler(CommandHandler('stop',   self._handle_stop))
+        app.add_handler(CommandHandler('link',   self._handle_link))
+        app.add_handler(CommandHandler('me',     self._handle_me))
+        app.add_handler(CommandHandler('help',   self._handle_help))
 
-                for update in result.get('result', []):
-                    offset = update['update_id'] + 1
-                    self._handle_update(update, db)
+        async with app:
+            await app.initialize()
+            await app.start()
+            await app.updater.start_polling(drop_pending_updates=True)
+            # держим polling живым пока поток не убит
+            import asyncio as _asyncio
+            while True:
+                await _asyncio.sleep(3600)
 
-            except Exception as e:
-                logger.error('Polling error: %s', e)
+    # ── Команды бота ─────────────────────────────────────────────
 
-    def _handle_update(self, update: dict, db):
-        try:
-            msg     = update.get('message', {})
-            text    = msg.get('text', '')
-            chat_id = msg.get('chat', {}).get('id')
-            name    = msg.get('chat', {}).get('first_name', 'there')
+    async def _handle_start(self, update: Update,
+                            context: ContextTypes.DEFAULT_TYPE):
+        db      = self._get_db()
+        chat_id = update.effective_chat.id
+        name    = update.effective_user.first_name or 'there'
+        is_new  = db.add_subscriber(chat_id)
 
-            if not chat_id:
+        if is_new:
+            text = (
+                f'👋 Hello, <b>{name}</b>!\n'
+                'You are now subscribed to EMS notifications.\n\n'
+                'To link your Telegram to your EMS account:\n'
+                '<code>/link your_username your_password</code>\n\n'
+                'Send /stop to unsubscribe, /help for all commands.'
+            )
+        else:
+            text = '✅ You are already subscribed. Send /help for commands.'
+
+        await update.message.reply_text(text, parse_mode='HTML')
+
+    async def _handle_stop(self, update: Update,
+                           context: ContextTypes.DEFAULT_TYPE):
+        db      = self._get_db()
+        chat_id = update.effective_chat.id
+        removed = db.remove_subscriber(chat_id)
+
+        if removed:
+            await update.message.reply_text('🔕 You have unsubscribed.')
+        else:
+            await update.message.reply_text('You were not subscribed.')
+
+    async def _handle_link(self, update: Update,
+                           context: ContextTypes.DEFAULT_TYPE):
+        """
+        /link <username> <password>
+        Привязывает Telegram ID к аккаунту EMS.
+        """
+        if len(context.args) < 2:
+            await update.message.reply_text(
+                'Usage: /link <username> <password>\n'
+                'Example: /link admin admin123',
+                parse_mode='HTML',
+            )
+            return
+
+        username = context.args[0]
+        password = context.args[1]
+        chat_id  = update.effective_chat.id
+
+        db   = self._get_db()
+        user = db.get_user_by_username(username)
+
+        if not user or not user.check_password(password):
+            await update.message.reply_text(
+                '❌ Invalid username or password.'
+            )
+            return
+
+        # Проверяем — не привязан ли этот telegram к другому аккаунту
+        all_users = db.get_all_users()
+        for u in all_users:
+            if u.telegram_id == chat_id and u.id != user.id:
+                await update.message.reply_text(
+                    '⚠️ This Telegram account is already linked to another user.'
+                )
                 return
 
-            if text == '/start':
-                is_new = db.add_subscriber(chat_id)
-                if is_new:
-                    self._send(chat_id,
-                               f'👋 Hello, <b>{name}</b>!\n'
-                               'You are now subscribed to EMS notifications.\n'
-                               'Send /stop to unsubscribe.')
-                    logger.info('New subscriber: %s', chat_id)
-                else:
-                    self._send(chat_id,
-                               '✅ You are already subscribed.')
+        user.telegram_id = chat_id
+        db.update_user(user)
 
-            elif text == '/stop':
-                removed = db.remove_subscriber(chat_id)
-                if removed:
-                    self._send(chat_id,
-                               '🔕 You have unsubscribed from notifications.')
-                else:
-                    self._send(chat_id,
-                               'You were not subscribed.')
+        # Подписываем автоматически если ещё не подписан
+        db.add_subscriber(chat_id)
 
-        except Exception as e:
-            logger.error('Handle update error: %s', e)
+        await update.message.reply_text(
+            f'✅ Successfully linked to EMS account <b>{username}</b>!\n'
+            'You will now receive personal notifications.',
+            parse_mode='HTML',
+        )
+
+    async def _handle_me(self, update: Update,
+                         context: ContextTypes.DEFAULT_TYPE):
+        """Показывает к какому аккаунту привязан этот Telegram."""
+        chat_id   = update.effective_chat.id
+        db        = self._get_db()
+        all_users = db.get_all_users()
+        linked    = next((u for u in all_users
+                          if u.telegram_id == chat_id), None)
+
+        if linked:
+            await update.message.reply_text(
+                f'🔗 Linked to EMS account: <b>{linked.username}</b>\n'
+                f'Role: {linked.role}\n'
+                f'Department: {linked.department or "—"}',
+                parse_mode='HTML',
+            )
+        else:
+            await update.message.reply_text(
+                '🔓 Not linked to any EMS account.\n'
+                'Use /link <username> <password> to connect.'
+            )
+
+    async def _handle_help(self, update: Update,
+                           context: ContextTypes.DEFAULT_TYPE):
+        text = (
+            '<b>EMS Bot commands</b>\n\n'
+            '/start — Subscribe to notifications\n'
+            '/stop — Unsubscribe\n'
+            '/link &lt;username&gt; &lt;password&gt; — Link your EMS account\n'
+            '/me — Show linked account info\n'
+            '/help — This message'
+        )
+        await update.message.reply_text(text, parse_mode='HTML')

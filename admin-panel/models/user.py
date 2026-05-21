@@ -1,11 +1,11 @@
 import hashlib
-from datetime import datetime
 
 
 class User:
     def __init__(self, id: str, username: str, password_hash: str,
                  role: str, created_at: str,
-                 salary: int = 0, department: str = ''):
+                 salary: int = 0, department: str = '',
+                 telegram_id: int = None):
         self.id            = id
         self.username      = username
         self.password_hash = password_hash
@@ -13,6 +13,7 @@ class User:
         self.created_at    = created_at
         self.salary        = salary
         self.department    = department
+        self.telegram_id   = telegram_id  # привязанный Telegram ID
 
     def check_password(self, password: str) -> bool:
         return self.password_hash == User.hash_password(password)
@@ -26,6 +27,7 @@ class User:
             'created_at':    self.created_at,
             'salary':        self.salary,
             'department':    self.department,
+            'telegram_id':   self.telegram_id,
         }
 
     @classmethod
@@ -38,6 +40,7 @@ class User:
             created_at    = data['created_at'],
             salary        = data.get('salary', 0),
             department    = data.get('department', ''),
+            telegram_id   = data.get('telegram_id', None),
         )
 
     @staticmethod
