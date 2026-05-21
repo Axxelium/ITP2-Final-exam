@@ -137,16 +137,11 @@ class BotService:
             await update.message.reply_text('You were not subscribed.')
 
     async def _handle_link(self, update: Update,
-                           context: ContextTypes.DEFAULT_TYPE):
-        """
-        /link <username> <password>
-        Привязывает Telegram ID к аккаунту EMS.
-        """
+                            context: ContextTypes.DEFAULT_TYPE):
         if len(context.args) < 2:
             await update.message.reply_text(
-                'Usage: /link <username> <password>\n'
+                'Usage: /link username password\n'
                 'Example: /link admin admin123',
-                parse_mode='HTML',
             )
             return
 

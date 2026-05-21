@@ -7,5 +7,14 @@
     "worked_since": 2022,
     "user_id": "e084bf27-ae06-4457-a171-ad5f543d5522",
     "created_at": "2026-05-21T23:39:02.251112"
+  },
+  {
+    "id": "04a666c8-356a-4e75-8c34-6b23559dabcd",
+    "name": "Aidos Zholmurzaey",
+    "salary": 200000,
+    "department": "Gym Team",
+    "worked_since": 2019,
+    "user_id": "e084bf27-ae06-4457-a171-ad5f543d5522",
+    "created_at": "2026-05-22T00:16:28.824562"
   }
 ]
