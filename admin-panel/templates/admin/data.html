@@ -1,6 +1,15 @@
 {% extends 'base.html' %}
 {% block title %}All Records{% endblock %}
 
+{% set cols = [
+  ('name',         'Name'),
+  ('department',   'Department'),
+  ('salary',       'Salary'),
+  ('worked_since', 'Working since'),
+  ('owner',        'Added by'),
+  ('created_at',   'Date added')
+] %}
+
 {% block content %}
 <div class="page-header">
   <div>
@@ -10,16 +19,37 @@
 </div>
 
 <div class="card">
+  <div class="card-header">
+    <h2>Records</h2>
+    <form method="GET" action="{{ url_for('admin.data') }}" class="toolbar">
+      <input type="search" name="q" value="{{ q }}"
+             placeholder="Search name, department, owner…" style="width:280px">
+      <input type="hidden" name="sort"  value="{{ sort }}">
+      <input type="hidden" name="order" value="{{ order }}">
+      <button type="submit" class="btn btn-secondary btn-sm">Search</button>
+      {% if q %}
+      <a href="{{ url_for('admin.data', sort=sort, order=order) }}"
+         class="btn btn-secondary btn-sm">Clear</a>
+      {% endif %}
+    </form>
+  </div>
+
   <div class="table-wrap">
     <table class="data-table">
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Department</th>
-          <th>Salary</th>
-          <th>Working since</th>
-          <th>Added by</th>
-          <th>Date added</th>
+          {% for key, label in cols %}
+          <th>
+            <a href="{{ url_for('admin.data',
+                        sort=key,
+                        order='desc' if (sort == key and order == 'asc') else 'asc',
+                        q=q) }}">
+              {{ label }}
+              {% if sort == key %}{{ '↑' if order == 'asc' else '↓' }}{% endif %}
+            </a>
+          </th>
+          {% endfor %}
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -31,7 +61,20 @@
           <td>{{ r.worked_since }}</td>
           <td>{{ users_map.get(r.user_id, '—') }}</td>
           <td>{{ r.created_at[:10] }}</td>
+          <td>
+            <div class="toolbar">
+              <button type="button" class="btn btn-secondary btn-sm"
+                      onclick="openDataModal('{{ r.id }}','{{ r.name }}','{{ r.department }}','{{ r.salary }}','{{ r.worked_since }}')">Edit</button>
+              <form method="POST"
+                    action="{{ url_for('admin.data_delete', record_id=r.id) }}"
+                    class="delete-form">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            </div>
+          </td>
         </tr>
+        {% else %}
+        <tr><td colspan="7" class="muted" style="padding:1.5rem;text-align:center">No records found</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -42,17 +85,86 @@
     <span class="info">Page {{ page }} of {{ pages }}</span>
     <div class="pages">
       {% if page > 1 %}
-        <a href="{{ url_for('admin.data', page=page-1) }}">←</a>
+        <a href="{{ url_for('admin.data', page=page-1, q=q, sort=sort, order=order) }}">←</a>
       {% endif %}
       {% for p in range(1, pages+1) %}
-        <a href="{{ url_for('admin.data', page=p) }}"
+        <a href="{{ url_for('admin.data', page=p, q=q, sort=sort, order=order) }}"
            class="{{ 'current' if p == page else '' }}">{{ p }}</a>
       {% endfor %}
       {% if page < pages %}
-        <a href="{{ url_for('admin.data', page=page+1) }}">→</a>
+        <a href="{{ url_for('admin.data', page=page+1, q=q, sort=sort, order=order) }}">→</a>
       {% endif %}
     </div>
   </div>
   {% endif %}
 </div>
+{% endblock %}
+
+{% block modals %}
+<div class="modal-overlay" id="data-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Edit record</h2>
+      <button class="modal-close" onclick="closeDataModal()">✕</button>
+    </div>
+    <form method="POST" id="data-form" action="">
+      <div class="form-group" style="margin-bottom:.75rem">
+        <label>Full name</label>
+        <input type="text" name="name" id="dm-name"
+               placeholder="Employee full name" required>
+      </div>
+      <div class="form-group" style="margin-bottom:.75rem">
+        <label>Department</label>
+        <select name="department" id="dm-department" required>
+          <option value="" disabled>— Select —</option>
+          {% for dept in departments %}
+          <option value="{{ dept.name }}">{{ dept.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:.75rem">
+        <label>Salary</label>
+        <input type="number" name="salary" id="dm-salary"
+               placeholder="Amount" min="1" max="50000000" required>
+      </div>
+      <div class="form-group" style="margin-bottom:1.25rem">
+        <label>Working since (year)</label>
+        <input type="number" name="worked_since" id="dm-worked-since"
+               placeholder="e.g. 2020" required>
+      </div>
+      <div class="toolbar" style="justify-content:flex-end">
+        <button type="button" class="btn btn-secondary"
+                onclick="closeDataModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openDataModal(id, name, department, salary, workedSince) {
+  document.getElementById('data-form').action = '/admin/data/edit/' + id;
+  document.getElementById('dm-name').value         = name;
+  document.getElementById('dm-salary').value       = salary;
+  document.getElementById('dm-worked-since').value = workedSince;
+  const deptSel = document.getElementById('dm-department');
+  let matched = false;
+  for (let opt of deptSel.options) {
+    opt.selected = opt.value === department;
+    if (opt.value === department) matched = true;
+  }
+  if (!matched && department) {
+    const o = document.createElement('option');
+    o.value = department; o.textContent = department; o.selected = true;
+    deptSel.appendChild(o);
+  }
+  document.getElementById('data-modal').classList.add('open');
+}
+function closeDataModal() {
+  document.getElementById('data-modal').classList.remove('open');
+}
+document.getElementById('data-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeDataModal();
+});
+</script>
 {% endblock %}
