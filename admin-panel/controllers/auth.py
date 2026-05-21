@@ -11,10 +11,6 @@ from services.bot_service import BotService
 
 auth_bp = Blueprint('auth', __name__)
 
-db = DatabaseService(Config.USERS_JSON, Config.DEPARTMENTS_JSON, Config.RECORDS_JSON)
-bot = BotService()
-
-
 class AuthController:
 
     def __init__(self):
