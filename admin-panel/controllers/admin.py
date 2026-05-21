@@ -12,18 +12,23 @@ from decorators           import login_required
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
-db  = DatabaseService(Config.USERS_JSON, Config.DEPARTMENTS_JSON)
+db  = DatabaseService(Config.USERS_JSON, Config.DEPARTMENTS_JSON,
+                      Config.RECORDS_JSON)
 bot = BotService()
+
+PER_PAGE = 10
 
 
 @admin_bp.route('/dashboard')
 @login_required(role='admin')
 def dashboard():
     users        = db.get_all_users()
+    records      = db.get_all_records()
     recent_users = sorted(users, key=lambda u: u.created_at, reverse=True)[:5]
     return render_template('admin/dashboard.html',
-                           total_users  = len(users),
-                           recent_users = recent_users)
+                           total_users   = len(users),
+                           total_records = len(records),
+                           recent_users  = recent_users)
 
 
 # ── Users ──────────────────────────────────────────────────────
@@ -145,14 +150,38 @@ def users_delete(user_id):
         flash("You can't delete yourself", 'error')
         return redirect(url_for('admin.users'))
 
+    db.delete_records_by_user(user_id)
     deleted = db.delete_user(user_id)
     if deleted:
         bot.notify_admin_action('delete_user', f'user_id={user_id}')
-        flash('Employee deleted', 'success')
+        flash('Employee and their records deleted', 'success')
     else:
         flash('Employee not found', 'error')
 
     return redirect(url_for('admin.users'))
+
+
+# ── All records (paginated) ────────────────────────────────────
+
+@admin_bp.route('/data')
+@login_required(role='admin')
+def data():
+    all_records = db.get_all_records()
+    users_map   = {u.id: u.username for u in db.get_all_users()}
+
+    page    = request.args.get('page', 1, type=int)
+    total   = len(all_records)
+    pages   = max(1, (total + PER_PAGE - 1) // PER_PAGE)
+    page    = max(1, min(page, pages))
+    start   = (page - 1) * PER_PAGE
+    records = all_records[start:start + PER_PAGE]
+
+    return render_template('admin/data.html',
+                           records   = records,
+                           users_map = users_map,
+                           page      = page,
+                           pages     = pages,
+                           total     = total)
 
 
 # ── Departments ────────────────────────────────────────────────
@@ -160,8 +189,8 @@ def users_delete(user_id):
 @admin_bp.route('/departments')
 @login_required(role='admin')
 def departments():
-    depts = db.get_all_departments()
-    return render_template('admin/departments.html', departments=depts)
+    return render_template('admin/departments.html',
+                           departments=db.get_all_departments())
 
 
 @admin_bp.route('/departments/create', methods=['POST'])

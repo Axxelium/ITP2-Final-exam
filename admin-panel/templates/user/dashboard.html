@@ -1,5 +1,74 @@
 {% extends 'base.html' %}
-{% block title %}Dashboard{% endblock %}
+{% block title %}My Records{% endblock %}
+
 {% block content %}
-<script>window.location = "{{ url_for('user.profile') }}";</script>
+<div class="page-header">
+  <h1>My Records</h1>
+</div>
+
+<div class="card" style="margin-bottom:1.5rem">
+  <div class="card-header"><h2>Add record</h2></div>
+  <div class="card-body">
+    <form method="POST" action="{{ url_for('user.records_add') }}">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Full name</label>
+          <input type="text" name="name" placeholder="Employee full name" required>
+        </div>
+        <div class="form-group">
+          <label>Department</label>
+          <input type="text" name="department" placeholder="Department name" required>
+        </div>
+        <div class="form-group">
+          <label>Salary</label>
+          <input type="number" name="salary" placeholder="Amount" min="1" required>
+        </div>
+        <div class="form-group">
+          <label>Working since (year)</label>
+          <input type="number" name="worked_since" placeholder="e.g. 2020" required>
+        </div>
+        <div class="form-group full">
+          <button type="submit" class="btn btn-primary">Add record</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2>My records</h2>
+    <span class="badge">{{ records|length }}</span>
+  </div>
+  <div class="table-wrap">
+    {% if records %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Department</th>
+          <th>Salary</th>
+          <th>Working since</th>
+          <th>Date added</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td>{{ r.name }}</td>
+          <td>{{ r.department }}</td>
+          <td>{{ r.salary }}</td>
+          <td>{{ r.worked_since }}</td>
+          <td>{{ r.created_at[:10] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="padding:2rem;text-align:center;color:var(--text-muted)">
+      No records yet. Add your first one above!
+    </div>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}

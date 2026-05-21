@@ -1,21 +1,23 @@
 import json
 import os
-from models.user import User
+from models.user   import User
+from models.record import Record
 
 
 class DatabaseService:
-
     def __init__(self, users_path: str,
                  departments_path: str = 'data/departments.json',
+                 records_path: str     = 'data/records.json',
                  subscribers_path: str = 'data/subscribers.json'):
         self.users_path        = users_path
         self.departments_path  = departments_path
+        self.records_path      = records_path
         self.subscribers_path  = subscribers_path
         self._ensure_files()
 
     def _ensure_files(self):
         for path in [self.users_path, self.departments_path,
-                     self.subscribers_path]:
+                     self.records_path, self.subscribers_path]:
             os.makedirs(os.path.dirname(path), exist_ok=True)
             if not os.path.exists(path):
                 with open(path, 'w') as f:
@@ -67,6 +69,33 @@ class DatabaseService:
             return True
         return False
 
+    # ══ RECORDS ══════════════════════════════════════════════════
+
+    def _load_records(self) -> list:
+        with open(self.records_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+
+    def _save_records(self, data: list):
+        with open(self.records_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+
+    def get_all_records(self) -> list[Record]:
+        return [Record.from_dict(r) for r in self._load_records()]
+
+    def get_records_by_user(self, user_id: str) -> list[Record]:
+        return [Record.from_dict(r)
+                for r in self._load_records()
+                if r['user_id'] == user_id]
+
+    def save_record(self, record: Record):
+        data = self._load_records()
+        data.append(record.to_dict())
+        self._save_records(data)
+
+    def delete_records_by_user(self, user_id: str):
+        data = self._load_records()
+        self._save_records([r for r in data if r['user_id'] != user_id])
+
     # ══ DEPARTMENTS ═══════════════════════════════════════════════
 
     def _load_departments(self) -> list:
@@ -116,7 +145,6 @@ class DatabaseService:
         return self._load_subscribers()
 
     def add_subscriber(self, chat_id: int) -> bool:
-        """Добавляет chat_id если его ещё нет. Возвращает True если новый."""
         data = self._load_subscribers()
         if chat_id not in data:
             data.append(chat_id)
