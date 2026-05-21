@@ -7,3 +7,4 @@ class Config:
 
     USERS_JSON       = f'{DB_PATH}/users.json'
     DEPARTMENTS_JSON = f'{DB_PATH}/departments.json'
+    SUBSCRIBERS_JSON = f'{DB_PATH}/subscribers.json'

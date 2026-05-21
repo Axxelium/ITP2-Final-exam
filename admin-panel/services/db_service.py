@@ -4,14 +4,18 @@ from models.user import User
 
 
 class DatabaseService:
+
     def __init__(self, users_path: str,
-                 departments_path: str = 'data/departments.json'):
-        self.users_path       = users_path
-        self.departments_path = departments_path
+                 departments_path: str = 'data/departments.json',
+                 subscribers_path: str = 'data/subscribers.json'):
+        self.users_path        = users_path
+        self.departments_path  = departments_path
+        self.subscribers_path  = subscribers_path
         self._ensure_files()
 
     def _ensure_files(self):
-        for path in [self.users_path, self.departments_path]:
+        for path in [self.users_path, self.departments_path,
+                     self.subscribers_path]:
             os.makedirs(os.path.dirname(path), exist_ok=True)
             if not os.path.exists(path):
                 with open(path, 'w') as f:
@@ -95,5 +99,35 @@ class DatabaseService:
         new_data = [d for d in data if d['id'] != dept_id]
         if len(new_data) < len(data):
             self._save_departments(new_data)
+            return True
+        return False
+
+    # ══ SUBSCRIBERS ═══════════════════════════════════════════════
+
+    def _load_subscribers(self) -> list:
+        with open(self.subscribers_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+
+    def _save_subscribers(self, data: list):
+        with open(self.subscribers_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2)
+
+    def get_all_subscribers(self) -> list[int]:
+        return self._load_subscribers()
+
+    def add_subscriber(self, chat_id: int) -> bool:
+        """Добавляет chat_id если его ещё нет. Возвращает True если новый."""
+        data = self._load_subscribers()
+        if chat_id not in data:
+            data.append(chat_id)
+            self._save_subscribers(data)
+            return True
+        return False
+
+    def remove_subscriber(self, chat_id: int) -> bool:
+        data     = self._load_subscribers()
+        new_data = [c for c in data if c != chat_id]
+        if len(new_data) < len(data):
+            self._save_subscribers(new_data)
             return True
         return False

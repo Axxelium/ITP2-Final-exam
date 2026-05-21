@@ -2,7 +2,6 @@ from flask import Flask
 from config import Config
 
 
-
 def create_app():
     app = Flask(__name__)
     app.secret_key = Config.SECRET_KEY
@@ -17,6 +16,12 @@ def create_app():
 
     return app
 
+
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=Config.DEBUG)
+
+    # Запускаем Telegram polling в фоне
+    from services.bot_service import BotService
+    BotService().start_polling()
+
+    app.run(debug=Config.DEBUG, use_reloader=False)
