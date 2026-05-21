@@ -158,33 +158,6 @@ class AdminController:
                                pages     = pages,
                                total     = total)
 
-    def departments(self):
-        return render_template('admin/departments.html',
-                               departments=self.db.get_all_departments())
-
-    def departments_create(self):
-        name = request.form.get('name', '').strip()
-        if not name:
-            flash('Department name is required', 'error')
-            return redirect(url_for('admin.departments'))
-        self.db.save_department({'id': str(uuid.uuid4()), 'name': name})
-        flash(f'Department "{name}" created', 'success')
-        return redirect(url_for('admin.departments'))
-
-    def departments_edit(self, dept_id):
-        name = request.form.get('name', '').strip()
-        if not name:
-            flash('Department name is required', 'error')
-            return redirect(url_for('admin.departments'))
-        self.db.update_department(dept_id, name)
-        flash('Department updated', 'success')
-        return redirect(url_for('admin.departments'))
-
-    def departments_delete(self, dept_id):
-        self.db.delete_department(dept_id)
-        flash('Department deleted', 'success')
-        return redirect(url_for('admin.departments'))
-
 
 _ctrl = AdminController()
 
@@ -222,23 +195,3 @@ def users_delete(user_id):
 @login_required(role='admin')
 def data():
     return _ctrl.data()
-
-@admin_bp.route('/departments')
-@login_required(role='admin')
-def departments():
-    return _ctrl.departments()
-
-@admin_bp.route('/departments/create', methods=['POST'])
-@login_required(role='admin')
-def departments_create():
-    return _ctrl.departments_create()
-
-@admin_bp.route('/departments/edit/<dept_id>', methods=['POST'])
-@login_required(role='admin')
-def departments_edit(dept_id):
-    return _ctrl.departments_edit(dept_id)
-
-@admin_bp.route('/departments/delete/<dept_id>', methods=['POST'])
-@login_required(role='admin')
-def departments_delete(dept_id):
-    return _ctrl.departments_delete(dept_id)

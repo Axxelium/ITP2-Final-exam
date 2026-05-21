@@ -96,42 +96,16 @@ class DatabaseService:
         data = self._load_records()
         self._save_records([r for r in data if r['user_id'] != user_id])
 
-    # ══ DEPARTMENTS ═══════════════════════════════════════════════
+    # ══ DEPARTMENTS (read-only — used to populate the dropdown) ════
 
     def _load_departments(self) -> list:
         with open(self.departments_path, 'r', encoding='utf-8') as f:
             return json.load(f)
 
-    def _save_departments(self, data: list):
-        with open(self.departments_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-
     def get_all_departments(self) -> list[dict]:
         return self._load_departments()
 
-    def save_department(self, dept: dict):
-        data = self._load_departments()
-        data.append(dept)
-        self._save_departments(data)
-
-    def update_department(self, dept_id: str, name: str) -> bool:
-        data = self._load_departments()
-        for d in data:
-            if d['id'] == dept_id:
-                d['name'] = name
-                self._save_departments(data)
-                return True
-        return False
-
-    def delete_department(self, dept_id: str) -> bool:
-        data     = self._load_departments()
-        new_data = [d for d in data if d['id'] != dept_id]
-        if len(new_data) < len(data):
-            self._save_departments(new_data)
-            return True
-        return False
-
-    # ══ SUBSCRIBERS ═══════════════════════════════════════════════
+    # ══ SUBSCRIBERS (Telegram bot) ════════════════════════════════
 
     def _load_subscribers(self) -> list:
         with open(self.subscribers_path, 'r', encoding='utf-8') as f:
