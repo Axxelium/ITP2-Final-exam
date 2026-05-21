@@ -4,14 +4,14 @@ from datetime import datetime
 from flask import (Blueprint, render_template, request,
                    session, redirect, url_for, flash)
 
-from config          import Config
-from models.user     import User
+from config               import Config
+from models.user          import User
 from services.db_service  import DatabaseService
 from services.bot_service import BotService
 
 auth_bp = Blueprint('auth', __name__)
 
-db  = DatabaseService(Config.USERS_JSON, Config.RECORDS_JSON)
+db  = DatabaseService(Config.USERS_JSON, Config.DEPARTMENTS_JSON)
 bot = BotService()
 
 
@@ -21,7 +21,7 @@ def index():
         return redirect(url_for('auth.login'))
     if session.get('role') == 'admin':
         return redirect(url_for('admin.dashboard'))
-    return redirect(url_for('user.dashboard'))
+    return redirect(url_for('user.profile'))
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
@@ -38,9 +38,9 @@ def login():
 
             if user.role == 'admin':
                 return redirect(url_for('admin.dashboard'))
-            return redirect(url_for('user.dashboard'))
+            return redirect(url_for('user.profile'))
 
-        flash('Неверный логин или пароль', 'error')
+        flash('Invalid username or password', 'error')
 
     return render_template('auth/login.html')
 
@@ -58,13 +58,13 @@ def register():
         password = request.form.get('password', '')
 
         if len(username) < 3:
-            flash('Имя пользователя — минимум 3 символа', 'error')
+            flash('Username must be at least 3 characters', 'error')
             return render_template('auth/register.html')
         if len(password) < 6:
-            flash('Пароль — минимум 6 символов', 'error')
+            flash('Password must be at least 6 characters', 'error')
             return render_template('auth/register.html')
         if db.get_user_by_username(username):
-            flash('Пользователь с таким именем уже существует', 'error')
+            flash('Username already taken', 'error')
             return render_template('auth/register.html')
 
         user = User(
@@ -77,7 +77,7 @@ def register():
         db.save_user(user)
         bot.notify_new_user(username)
 
-        flash('Регистрация успешна! Войдите в систему', 'success')
+        flash('Registration successful! Please sign in.', 'success')
         return redirect(url_for('auth.login'))
 
     return render_template('auth/register.html')
