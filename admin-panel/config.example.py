@@ -2,6 +2,7 @@ class Config:
     SECRET_KEY = 'change-this'
     DB_PATH    = 'data'
     BOT_TOKEN  = 'your-bot-token-here'
+    CHAT_ID = ''
     DEBUG      = True
 
     USERS_JSON       = f'{DB_PATH}/users.json'

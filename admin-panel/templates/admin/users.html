@@ -64,6 +64,7 @@
     <table class="data-table">
       <thead>
         <tr>
+          <th>ID</th>
           <th>Employee</th>
           <th>Department</th>
           <th>Salary</th>
@@ -75,6 +76,7 @@
       <tbody id="users-tbody" data-current-user="{{ session.get('user_id') }}">
         {% for user in users %}
         <tr>
+          <td><span style="font-family:var(--font-mono);font-size:0.8rem">{{ user.id[:8] }}</span></td>
           <td>
             <div class="cell-user">
               <div class="avatar">{{ user.username[0].upper() }}</div>

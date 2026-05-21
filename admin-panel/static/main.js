@@ -11,11 +11,11 @@ document.addEventListener('DOMContentLoaded', function () {
       let valid = true;
 
       if (username && username.value.trim().length < 3) {
-        showFieldError(username, 'Минимум 3 символа');
+        showFieldError(username, 'Minimum 3 characters');
         valid = false;
       }
       if (password && password.value.length < 6) {
-        showFieldError(password, 'Минимум 6 символов');
+        showFieldError(password, 'Minimum 6 characters');
         valid = false;
       }
       if (!valid) e.preventDefault();
@@ -39,13 +39,16 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // Подтверждение перед удалением
-  document.querySelectorAll('.delete-form').forEach(function (form) {
-    form.addEventListener('submit', function (e) {
-      if (!confirm('Удалить? Это действие необратимо.')) {
-        e.preventDefault();
-      }
+  function bindDeleteConfirm(scope) {
+    scope.querySelectorAll('.delete-form').forEach(function (form) {
+      form.addEventListener('submit', function (e) {
+        if (!confirm('Delete? This action cannot be undone.')) {
+          e.preventDefault();
+        }
+      });
     });
-  });
+  }
+  bindDeleteConfirm(document);
 
   // Поиск по таблице пользователей (fetch)
   const searchInput = document.getElementById('search-input');
@@ -68,36 +71,41 @@ document.addEventListener('DOMContentLoaded', function () {
   function renderUsers(users) {
     tbody.innerHTML = '';
     if (users.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="muted" style="padding:1rem;text-align:center">Ничего не найдено</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="muted" style="padding:1rem;text-align:center">Nothing found</td></tr>';
       return;
     }
+    const currentUser = tbody.dataset.currentUser;
     users.forEach(function (u) {
-      const isSelf = tbody.dataset.currentUser === u.id;
+      const isSelf = currentUser === u.id;
+      const dept   = u.department ? u.department : '—';
+      const salary = u.salary ? u.salary : '—';
       tbody.innerHTML += `
         <tr>
-          <td><span style="font-family:var(--font-mono);font-size:0.8rem">${u.id.slice(0, 8)}…</span></td>
+          <td><span style="font-family:var(--font-mono);font-size:0.8rem">${u.id.slice(0, 8)}</span></td>
           <td>
             <div class="cell-user">
               <div class="avatar">${u.username[0].toUpperCase()}</div>
               <span class="meta-name">${u.username}</span>
             </div>
           </td>
+          <td>${dept}</td>
+          <td>${salary}</td>
           <td><span class="badge ${u.role}">${u.role}</span></td>
           <td>${u.created_at.slice(0, 10)}</td>
           <td>
-            ${isSelf ? '<span class="muted">—</span>' : `
+            <div class="toolbar">
+              <button type="button" class="btn btn-secondary btn-sm"
+                      onclick="openEditModal('${u.id}','${u.username}','${u.role}','${u.department || ''}','${u.salary || ''}')">Edit</button>
+              ${isSelf ? '<span class="muted">—</span>' : `
               <form method="POST" action="/admin/users/delete/${u.id}" class="delete-form">
-                <button type="submit" class="btn btn-danger btn-sm">Удалить</button>
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
               </form>`}
+            </div>
           </td>
         </tr>`;
     });
     // переподключаем confirm для новых форм
-    tbody.querySelectorAll('.delete-form').forEach(function (form) {
-      form.addEventListener('submit', function (e) {
-        if (!confirm('Удалить? Это действие необратимо.')) e.preventDefault();
-      });
-    });
+    bindDeleteConfirm(tbody);
   }
 
   // Закрытие flash-сообщений

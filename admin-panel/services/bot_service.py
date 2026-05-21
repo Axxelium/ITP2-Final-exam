@@ -31,6 +31,9 @@ class BotService:
         import asyncio
         db          = self._get_db()
         subscribers = db.get_all_subscribers()
+        # Fallback: use CHAT_ID from Config if nobody subscribed via /start yet
+        if not subscribers and getattr(Config, 'CHAT_ID', ''):
+            subscribers = [Config.CHAT_ID]
         if not subscribers:
             logger.info('Telegram: no subscribers')
             return
