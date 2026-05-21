@@ -1,7 +1,7 @@
 class Config:
     SECRET_KEY = 'just-text'
     DB_PATH    = 'data'
-    BOT_TOKEN  = '8974986331:AAEUdQXA4QKGFtN4wYGbY4JGg3jQd3X8b74'
+    BOT_TOKEN  = 'TOKEN'
     DEBUG      = True
 
     USERS_JSON       = f'{DB_PATH}/users.json'
