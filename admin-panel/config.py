@@ -6,5 +6,4 @@ class Config:
     DEBUG      = True
 
     USERS_JSON       = f'{DB_PATH}/users.json'
-    RECORDS_JSON     = f'{DB_PATH}/records.json'
     DEPARTMENTS_JSON = f'{DB_PATH}/departments.json'
