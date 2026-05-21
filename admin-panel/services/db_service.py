@@ -87,16 +87,38 @@ class DatabaseService:
                 for r in self._load_records()
                 if r['user_id'] == user_id]
 
+    def get_record_by_id(self, record_id: str) -> Record | None:
+        for r in self._load_records():
+            if r['id'] == record_id:
+                return Record.from_dict(r)
+        return None
+
     def save_record(self, record: Record):
         data = self._load_records()
         data.append(record.to_dict())
         self._save_records(data)
 
+    def update_record(self, record: Record):
+        data = self._load_records()
+        for i, r in enumerate(data):
+            if r['id'] == record.id:
+                data[i] = record.to_dict()
+                break
+        self._save_records(data)
+
+    def delete_record(self, record_id: str) -> bool:
+        data     = self._load_records()
+        new_data = [r for r in data if r['id'] != record_id]
+        if len(new_data) < len(data):
+            self._save_records(new_data)
+            return True
+        return False
+
     def delete_records_by_user(self, user_id: str):
         data = self._load_records()
         self._save_records([r for r in data if r['user_id'] != user_id])
 
-    # ══ DEPARTMENTS (read-only — used to populate the dropdown) ════
+    # ══ DEPARTMENTS (read-only — used to populate the record dropdown) ══
 
     def _load_departments(self) -> list:
         with open(self.departments_path, 'r', encoding='utf-8') as f:

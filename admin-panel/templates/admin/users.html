@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
-{% block title %}Employees{% endblock %}
+{% block title %}Users{% endblock %}
 
 {% block content %}
 <div class="page-header">
-  <h1>Employees</h1>
+  <h1>Users</h1>
 </div>
 
 <div class="card" style="margin-bottom:1.5rem">
-  <div class="card-header"><h2>Add employee</h2></div>
+  <div class="card-header"><h2>Add user</h2></div>
   <div class="card-body">
     <form method="POST" action="{{ url_for('admin.users_create') }}">
       <div class="form-grid">
@@ -20,22 +20,9 @@
           <input type="password" name="password" placeholder="Min. 6 characters" required>
         </div>
         <div class="form-group">
-          <label>Department</label>
-          <select name="department">
-            <option value="">— Not assigned —</option>
-            {% for dept in departments %}
-            <option value="{{ dept.name }}">{{ dept.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Salary</label>
-          <input type="number" name="salary" placeholder="Amount" min="1" max="50000000">
-        </div>
-        <div class="form-group">
           <label>Role</label>
           <select name="role">
-            <option value="user">Employee</option>
+            <option value="user">User</option>
             <option value="admin">Admin</option>
           </select>
         </div>
@@ -50,10 +37,10 @@
 
 <div class="card">
   <div class="card-header">
-    <h2>All employees</h2>
+    <h2>All users</h2>
     <div class="toolbar">
       <input type="search" id="search-input"
-             placeholder="Search by name or role…"
+             placeholder="Search by username or role…"
              style="width:260px">
     </div>
   </div>
@@ -62,9 +49,7 @@
       <thead>
         <tr>
           <th>ID</th>
-          <th>Employee</th>
-          <th>Department</th>
-          <th>Salary</th>
+          <th>Username</th>
           <th>Role</th>
           <th>Joined</th>
           <th>Actions</th>
@@ -80,20 +65,12 @@
               <span class="meta-name">{{ user.username }}</span>
             </div>
           </td>
-          <td>{{ user.department if user.department else '—' }}</td>
-          <td>{{ user.salary if user.salary else '—' }}</td>
           <td><span class="badge {{ user.role }}">{{ user.role }}</span></td>
           <td>{{ user.created_at[:10] }}</td>
           <td>
             <div class="toolbar">
               <button type="button" class="btn btn-secondary btn-sm"
-                      onclick="openEditModal(
-                        '{{ user.id }}',
-                        '{{ user.username }}',
-                        '{{ user.role }}',
-                        '{{ user.department }}',
-                        '{{ user.salary }}'
-                      )">Edit</button>
+                      onclick="openEditModal('{{ user.id }}','{{ user.username }}','{{ user.role }}')">Edit</button>
               {% if user.id != session.get('user_id') %}
               <form method="POST"
                     action="{{ url_for('admin.users_delete', user_id=user.id) }}"
@@ -117,7 +94,7 @@
 <div class="modal-overlay" id="edit-modal">
   <div class="modal-box">
     <div class="modal-header">
-      <h2>Edit employee</h2>
+      <h2>Edit user</h2>
       <button class="modal-close" onclick="closeEditModal()">✕</button>
     </div>
     <form method="POST" id="edit-form" action="">
@@ -126,24 +103,10 @@
         <input type="text" name="username" id="edit-username"
                placeholder="Min. 3 characters" required>
       </div>
-      <div class="form-group" style="margin-bottom:.75rem">
-        <label>Department</label>
-        <select name="department" id="edit-department">
-          <option value="">— Not assigned —</option>
-          {% for dept in departments %}
-          <option value="{{ dept.name }}">{{ dept.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="form-group" style="margin-bottom:.75rem">
-        <label>Salary</label>
-        <input type="number" name="salary" id="edit-salary"
-               placeholder="Amount" min="1" max="50000000">
-      </div>
       <div class="form-group" style="margin-bottom:1.25rem">
         <label>Role</label>
         <select name="role" id="edit-role">
-          <option value="user">Employee</option>
+          <option value="user">User</option>
           <option value="admin">Admin</option>
         </select>
       </div>
@@ -157,15 +120,10 @@
 </div>
 
 <script>
-function openEditModal(userId, username, role, department, salary) {
+function openEditModal(userId, username, role) {
   document.getElementById('edit-form').action = '/admin/users/edit/' + userId;
-  document.getElementById('edit-username').value   = username;
-  document.getElementById('edit-role').value       = role;
-  document.getElementById('edit-salary').value     = salary || '';
-  const deptSel = document.getElementById('edit-department');
-  for (let opt of deptSel.options) {
-    opt.selected = opt.value === department;
-  }
+  document.getElementById('edit-username').value = username;
+  document.getElementById('edit-role').value     = role;
   document.getElementById('edit-modal').classList.add('open');
 }
 function closeEditModal() {

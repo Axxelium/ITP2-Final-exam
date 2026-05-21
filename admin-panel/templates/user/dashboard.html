@@ -17,11 +17,16 @@
         </div>
         <div class="form-group">
           <label>Department</label>
-          <input type="text" name="department" placeholder="Department name" required>
+          <select name="department" required>
+            <option value="" disabled selected>— Select —</option>
+            {% for dept in departments %}
+            <option value="{{ dept.name }}">{{ dept.name }}</option>
+            {% endfor %}
+          </select>
         </div>
         <div class="form-group">
           <label>Salary</label>
-          <input type="number" name="salary" placeholder="Amount" min="1" required>
+          <input type="number" name="salary" placeholder="Amount" min="1" max="50000000" required>
         </div>
         <div class="form-group">
           <label>Working since (year)</label>
@@ -50,6 +55,7 @@
           <th>Salary</th>
           <th>Working since</th>
           <th>Date added</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -60,6 +66,17 @@
           <td>{{ r.salary }}</td>
           <td>{{ r.worked_since }}</td>
           <td>{{ r.created_at[:10] }}</td>
+          <td>
+            <div class="toolbar">
+              <button type="button" class="btn btn-secondary btn-sm"
+                      onclick="openRecordModal('{{ r.id }}','{{ r.name }}','{{ r.department }}','{{ r.salary }}','{{ r.worked_since }}')">Edit</button>
+              <form method="POST"
+                    action="{{ url_for('user.records_delete', record_id=r.id) }}"
+                    class="delete-form">
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            </div>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -71,4 +88,74 @@
     {% endif %}
   </div>
 </div>
+{% endblock %}
+
+{% block modals %}
+<div class="modal-overlay" id="record-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Edit record</h2>
+      <button class="modal-close" onclick="closeRecordModal()">✕</button>
+    </div>
+    <form method="POST" id="record-form" action="">
+      <div class="form-group" style="margin-bottom:.75rem">
+        <label>Full name</label>
+        <input type="text" name="name" id="rec-name"
+               placeholder="Employee full name" required>
+      </div>
+      <div class="form-group" style="margin-bottom:.75rem">
+        <label>Department</label>
+        <select name="department" id="rec-department" required>
+          <option value="" disabled>— Select —</option>
+          {% for dept in departments %}
+          <option value="{{ dept.name }}">{{ dept.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:.75rem">
+        <label>Salary</label>
+        <input type="number" name="salary" id="rec-salary"
+               placeholder="Amount" min="1" max="50000000" required>
+      </div>
+      <div class="form-group" style="margin-bottom:1.25rem">
+        <label>Working since (year)</label>
+        <input type="number" name="worked_since" id="rec-worked-since"
+               placeholder="e.g. 2020" required>
+      </div>
+      <div class="toolbar" style="justify-content:flex-end">
+        <button type="button" class="btn btn-secondary"
+                onclick="closeRecordModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openRecordModal(id, name, department, salary, workedSince) {
+  document.getElementById('record-form').action = '/user/records/edit/' + id;
+  document.getElementById('rec-name').value         = name;
+  document.getElementById('rec-salary').value       = salary;
+  document.getElementById('rec-worked-since').value = workedSince;
+  const deptSel = document.getElementById('rec-department');
+  let matched = false;
+  for (let opt of deptSel.options) {
+    opt.selected = opt.value === department;
+    if (opt.value === department) matched = true;
+  }
+  // если отдела записи нет в списке — добавляем временную опцию
+  if (!matched && department) {
+    const o = document.createElement('option');
+    o.value = department; o.textContent = department; o.selected = true;
+    deptSel.appendChild(o);
+  }
+  document.getElementById('record-modal').classList.add('open');
+}
+function closeRecordModal() {
+  document.getElementById('record-modal').classList.remove('open');
+}
+document.getElementById('record-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeRecordModal();
+});
+</script>
 {% endblock %}

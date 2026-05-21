@@ -34,8 +34,7 @@ class AdminController:
 
     def users(self):
         return render_template('admin/users.html',
-                               users       = self.db.get_all_users(),
-                               departments = self.db.get_all_departments())
+                               users = self.db.get_all_users())
 
     def users_search(self):
         query     = request.args.get('q', '').strip().lower()
@@ -47,11 +46,9 @@ class AdminController:
         return jsonify([u.to_dict() for u in all_users])
 
     def users_create(self):
-        username   = request.form.get('username', '').strip()
-        password   = request.form.get('password', '')
-        role       = request.form.get('role', 'user')
-        department = request.form.get('department', '').strip()
-        salary_str = request.form.get('salary', '').strip()
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        role     = request.form.get('role', 'user')
 
         if len(username) < 3 or len(password) < 6:
             flash('Username min 3 chars, password min 6 chars', 'error')
@@ -62,25 +59,16 @@ class AdminController:
         if role not in ('admin', 'user'):
             role = 'user'
 
-        salary = 0
-        if salary_str:
-            try:
-                salary = int(salary_str)
-            except ValueError:
-                salary = 0
-
         user = User(
             id            = str(uuid.uuid4()),
             username      = username,
             password_hash = User.hash_password(password),
             role          = role,
             created_at    = datetime.now().isoformat(),
-            salary        = salary,
-            department    = department,
         )
         self.db.save_user(user)
         self.bot.notify_new_user(username)
-        flash(f'Employee {username} created', 'success')
+        flash(f'User {username} created', 'success')
         return redirect(url_for('admin.users'))
 
     def users_edit(self, user_id):
@@ -91,8 +79,6 @@ class AdminController:
 
         new_username = request.form.get('username', '').strip()
         new_role     = request.form.get('role', 'user')
-        new_dept     = request.form.get('department', '').strip()
-        salary_str   = request.form.get('salary', '').strip()
 
         if len(new_username) < 3:
             flash('Username must be at least 3 characters', 'error')
@@ -103,27 +89,15 @@ class AdminController:
             flash('Username already taken', 'error')
             return redirect(url_for('admin.users'))
 
-        user.username   = new_username
-        user.role       = new_role
-        user.department = new_dept
+        if new_role not in ('admin', 'user'):
+            new_role = 'user'
 
-        if salary_str:
-            try:
-                salary = int(salary_str)
-                if 1 <= salary <= 50_000_000:
-                    user.salary = salary
-                else:
-                    flash('Salary must be between 1 and 50,000,000', 'error')
-                    return redirect(url_for('admin.users'))
-            except ValueError:
-                flash('Salary must be a number', 'error')
-                return redirect(url_for('admin.users'))
-        else:
-            user.salary = 0
+        user.username = new_username
+        user.role     = new_role
 
         self.db.update_user(user)
         self.bot.notify_admin_action('edit_user', f'user_id={user_id}')
-        flash(f'Employee {new_username} updated', 'success')
+        flash(f'User {new_username} updated', 'success')
         return redirect(url_for('admin.users'))
 
     def users_delete(self, user_id):
@@ -135,9 +109,9 @@ class AdminController:
         deleted = self.db.delete_user(user_id)
         if deleted:
             self.bot.notify_admin_action('delete_user', f'user_id={user_id}')
-            flash('Employee and their records deleted', 'success')
+            flash('User and their records deleted', 'success')
         else:
-            flash('Employee not found', 'error')
+            flash('User not found', 'error')
         return redirect(url_for('admin.users'))
 
     def data(self):
