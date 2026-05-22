@@ -17,7 +17,7 @@ class BotService:
     def _build_app(self) -> Application:
         return Application.builder().token(Config.BOT_TOKEN).build()
 
-    # Рассылка всем подписчикам
+    # ── Рассылка всем подписчикам ─────────────────────────────────
 
     def _get_db(self):
         from services.db_service import DatabaseService
@@ -56,7 +56,7 @@ class BotService:
         except Exception as e:
             logger.error('Telegram broadcast error: %s', e)
 
-    # Публичные уведомления
+    # ── Публичные методы уведомлений ──────────────────────────────
 
     def notify_new_user(self, username: str):
         text = (
@@ -75,7 +75,7 @@ class BotService:
         label = labels.get(action, f'⚙️ Action: {action}')
         self._broadcast(f'<b>{label}</b>\n<code>{detail}</code>')
 
-    # Polling — обрабатывает команды
+    # ── Polling — обработчики команд ──────────────────────────────
 
     def start_polling(self):
         thread = threading.Thread(
@@ -102,4 +102,120 @@ class BotService:
         async with app:
             await app.initialize()
             await app.start()
-            await app.updater.start_poll
+            await app.updater.start_polling(drop_pending_updates=True)
+            # держим polling живым пока поток не убит
+            import asyncio as _asyncio
+            while True:
+                await _asyncio.sleep(3600)
+
+    # ── Команды бота ─────────────────────────────────────────────
+
+    async def _handle_start(self, update: Update,
+                            context: ContextTypes.DEFAULT_TYPE):
+        db      = self._get_db()
+        chat_id = update.effective_chat.id
+        name    = update.effective_user.first_name or 'there'
+        is_new  = db.add_subscriber(chat_id)
+
+        if is_new:
+            text = (
+                f'👋 Hello, <b>{name}</b>!\n'
+                'You are now subscribed to EMS notifications.\n\n'
+                'To link your Telegram to your EMS account:\n'
+                '<code>/link your_username your_password</code>\n\n'
+                'Send /stop to unsubscribe, /help for all commands.'
+            )
+        else:
+            text = '✅ You are already subscribed. Send /help for commands.'
+
+        await update.message.reply_text(text, parse_mode='HTML')
+
+    async def _handle_stop(self, update: Update,
+                           context: ContextTypes.DEFAULT_TYPE):
+        db      = self._get_db()
+        chat_id = update.effective_chat.id
+        removed = db.remove_subscriber(chat_id)
+
+        if removed:
+            await update.message.reply_text('🔕 You have unsubscribed.')
+        else:
+            await update.message.reply_text('You were not subscribed.')
+
+    async def _handle_link(self, update: Update,
+                            context: ContextTypes.DEFAULT_TYPE):
+        if len(context.args) < 2:
+            await update.message.reply_text(
+                'Usage: /link username password\n'
+                'Example: /link admin admin123',
+            )
+            return
+
+        username = context.args[0]
+        password = context.args[1]
+        chat_id  = update.effective_chat.id
+
+        db   = self._get_db()
+        user = db.get_user_by_username(username)
+
+        if not user or not user.check_password(password):
+            await update.message.reply_text(
+                '❌ Invalid username or password.'
+            )
+            return
+
+        # Если этот Telegram уже привязан к другому аккаунту — отвязываем
+        # его оттуда (перепривязка: один Telegram = один аккаунт).
+        rebound_from = None
+        for u in db.get_all_users():
+            if u.telegram_id == chat_id and u.id != user.id:
+                u.telegram_id = None
+                db.update_user(u)
+                rebound_from = u.username
+
+        user.telegram_id = chat_id
+        db.update_user(user)
+
+        # Подписываем автоматически если ещё не подписан
+        db.add_subscriber(chat_id)
+
+        message = (
+            f'✅ Successfully linked to EMS account <b>{username}</b>!\n'
+            'You will now receive personal notifications.'
+        )
+        if rebound_from:
+            message += f'\n(Unlinked from previous account: {rebound_from})'
+
+        await update.message.reply_text(message, parse_mode='HTML')
+
+    async def _handle_me(self, update: Update,
+                         context: ContextTypes.DEFAULT_TYPE):
+        """Показывает к какому аккаунту привязан этот Telegram."""
+        chat_id   = update.effective_chat.id
+        db        = self._get_db()
+        all_users = db.get_all_users()
+        linked    = next((u for u in all_users
+                          if u.telegram_id == chat_id), None)
+
+        if linked:
+            await update.message.reply_text(
+                f'🔗 Linked to EMS account: <b>{linked.username}</b>\n'
+                f'Role: {linked.role}',
+                parse_mode='HTML',
+            )
+        else:
+            await update.message.reply_text(
+                '🔓 Not linked to any EMS account.\n'
+                'Use /link <username> <password> to connect.'
+            )
+
+    async def _handle_help(self, update: Update,
+                           context: ContextTypes.DEFAULT_TYPE):
+        text = (
+            '<b>EMS Bot commands</b>\n\n'
+            '/start — Subscribe to notifications\n'
+            '/stop — Unsubscribe\n'
+            '/link &lt;username&gt; &lt;password&gt; — Link your EMS account\n'
+            '/me — Show linked account info\n'
+            '/help — This message'
+        )
+        await update.message.reply_text(text, parse_mode='HTML')
