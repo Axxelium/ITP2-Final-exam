@@ -23,7 +23,7 @@ class DatabaseService:
                 with open(path, 'w') as f:
                     json.dump([], f)
 
-    # ══ USERS ════════════════════════════════════════════════════
+    # ПОЛЬЗОВАТЕЛИ
 
     def _load_users(self) -> list:
         with open(self.users_path, 'r', encoding='utf-8') as f:
@@ -69,7 +69,7 @@ class DatabaseService:
             return True
         return False
 
-    # ══ RECORDS ══════════════════════════════════════════════════
+    # ЗАПИСИ
 
     def _load_records(self) -> list:
         with open(self.records_path, 'r', encoding='utf-8') as f:
@@ -118,7 +118,7 @@ class DatabaseService:
         data = self._load_records()
         self._save_records([r for r in data if r['user_id'] != user_id])
 
-    # ══ DEPARTMENTS (read-only — used to populate the record dropdown) ══
+    # департаменты(для падающего списка)
 
     def _load_departments(self) -> list:
         with open(self.departments_path, 'r', encoding='utf-8') as f:
@@ -127,7 +127,7 @@ class DatabaseService:
     def get_all_departments(self) -> list[dict]:
         return self._load_departments()
 
-    # ══ SUBSCRIBERS (Telegram bot) ════════════════════════════════
+    # ПОДПИСЧИКИ
 
     def _load_subscribers(self) -> list:
         with open(self.subscribers_path, 'r', encoding='utf-8') as f:
