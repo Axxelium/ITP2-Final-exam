@@ -17,7 +17,7 @@ class BotService:
     def _build_app(self) -> Application:
         return Application.builder().token(Config.BOT_TOKEN).build()
 
-    # ── Рассылка всем подписчикам ─────────────────────────────────
+    # Рассылка всем подписчикам
 
     def _get_db(self):
         from services.db_service import DatabaseService
@@ -56,7 +56,7 @@ class BotService:
         except Exception as e:
             logger.error('Telegram broadcast error: %s', e)
 
-    # ── Публичные методы уведомлений ──────────────────────────────
+    # Публичные методы уведомлений
 
     def notify_new_user(self, username: str):
         text = (
@@ -75,7 +75,7 @@ class BotService:
         label = labels.get(action, f'⚙️ Action: {action}')
         self._broadcast(f'<b>{label}</b>\n<code>{detail}</code>')
 
-    # ── Polling — обработчики команд ──────────────────────────────
+    # Polling — обрабатывает команды
 
     def start_polling(self):
         thread = threading.Thread(
@@ -108,7 +108,7 @@ class BotService:
             while True:
                 await _asyncio.sleep(3600)
 
-    # ── Команды бота ─────────────────────────────────────────────
+    # Команды бота
 
     async def _handle_start(self, update: Update,
                             context: ContextTypes.DEFAULT_TYPE):
@@ -163,8 +163,7 @@ class BotService:
             )
             return
 
-        # Если этот Telegram уже привязан к другому аккаунту — отвязываем
-        # его оттуда (перепривязка: один Telegram = один аккаунт).
+        # Если этот Telegram уже привязан к другому аккаунту то отвязываем
         rebound_from = None
         for u in db.get_all_users():
             if u.telegram_id == chat_id and u.id != user.id:
@@ -175,7 +174,7 @@ class BotService:
         user.telegram_id = chat_id
         db.update_user(user)
 
-        # Подписываем автоматически если ещё не подписан
+        # Автоматом на ррысслку подписываем
         db.add_subscriber(chat_id)
 
         message = (
